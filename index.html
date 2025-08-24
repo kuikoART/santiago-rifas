@@ -148,11 +148,22 @@
             border-color: #2ecc71;
         }
         
-        .number.sold {
+        .number.reserved {
             background: #ff6b6b;
             color: white;
             border-color: #ff4757;
             cursor: not-allowed;
+            position: relative;
+        }
+        
+        .number.reserved::after {
+            content: "Reservado";
+            position: absolute;
+            font-size: 8px;
+            bottom: 3px;
+            left: 0;
+            right: 0;
+            text-align: center;
         }
         
         .actions {
@@ -180,6 +191,13 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
         
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
         .btn i {
             margin-right: 8px;
         }
@@ -195,6 +213,15 @@
             margin-top: 10px;
             font-weight: bold;
             color: #25d366;
+        }
+        
+        .cost-info {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            border: 1px solid #ffeaa7;
         }
         
         @media (max-width: 768px) {
@@ -222,18 +249,35 @@
             color: #6c757d;
             border: 2px dashed #ccc;
         }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: #4cd964;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>RIFA ESPECIAL</h1>
-            <p class="subtitle">Lavadora OCEAN de 8.0 Kg - ¡Participa por solo $10!</p>
+            <p class="subtitle">Lavadora OCEAN de 8.0 Kg - ¡Participa por solo 2000 CUP!</p>
         </header>
         
         <div class="content">
             <div class="image-section">
-                <!-- Espacio para la imagen de la lavadora -->
                 <div class="image-placeholder">
                     <div>
                         <i class="fas fa-camera fa-3x"></i>
@@ -265,13 +309,17 @@
                     <p>3. Te contactaremos para confirmar tu reserva y pago</p>
                 </div>
                 
+                <div class="cost-info">
+                    <p><strong>Costo por número: 2000 CUP</strong></p>
+                </div>
+                
                 <h3>Selecciona tu número de la suerte (1-100):</h3>
                 <div class="numbers-grid" id="numbersGrid">
                     <!-- Los números se generarán con JavaScript -->
                 </div>
                 
                 <div class="actions">
-                    <button class="btn" id="whatsappBtn">
+                    <button class="btn" id="whatsappBtn" disabled>
                         <i class="fab fa-whatsapp"></i> Reservar por WhatsApp
                     </button>
                 </div>
@@ -288,14 +336,19 @@
         </footer>
     </div>
 
+    <div class="notification" id="notification">
+        ¡Números reservados exitosamente!
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const numbersGrid = document.getElementById('numbersGrid');
             const whatsappBtn = document.getElementById('whatsappBtn');
+            const notification = document.getElementById('notification');
             let selectedNumbers = [];
             
-            // Cargar números vendidos desde localStorage o inicializar array vacío
-            let soldNumbers = JSON.parse(localStorage.getItem('soldNumbers')) || [];
+            // Cargar números reservados desde localStorage
+            let reservedNumbers = JSON.parse(localStorage.getItem('reservedNumbers')) || [];
             
             // Generar los números del 1 al 100
             for (let i = 1; i <= 100; i++) {
@@ -304,53 +357,96 @@
                 numberElement.textContent = i;
                 numberElement.dataset.number = i;
                 
-                // Marcar como vendido si está en la lista
-                if (soldNumbers.includes(i)) {
-                    numberElement.classList.add('sold');
+                // Marcar como reservado si está en la lista
+                if (reservedNumbers.includes(i)) {
+                    numberElement.classList.add('reserved');
                 } else {
-                    // Agregar evento de clic solo si no está vendido
+                    // Agregar evento de clic solo si no está reservado
                     numberElement.addEventListener('click', function() {
-                        if (selectedNumbers.includes(i)) {
-                            // Si ya está seleccionado, quitarlo
-                            const index = selectedNumbers.indexOf(i);
-                            selectedNumbers.splice(index, 1);
-                            numberElement.classList.remove('selected');
-                        } else {
-                            // Si no está seleccionado, agregarlo
-                            selectedNumbers.push(i);
-                            numberElement.classList.add('selected');
-                        }
+                        toggleNumberSelection(this, i);
                     });
                 }
                 
                 numbersGrid.appendChild(numberElement);
             }
             
+            // Función para seleccionar/deseleccionar números
+            function toggleNumberSelection(element, number) {
+                if (element.classList.contains('selected')) {
+                    // Deseleccionar
+                    const index = selectedNumbers.indexOf(number);
+                    if (index > -1) {
+                        selectedNumbers.splice(index, 1);
+                    }
+                    element.classList.remove('selected');
+                } else {
+                    // Seleccionar
+                    selectedNumbers.push(number);
+                    element.classList.add('selected');
+                }
+                
+                // Habilitar o deshabilitar el botón según si hay números seleccionados
+                whatsappBtn.disabled = selectedNumbers.length === 0;
+            }
+            
             // Configurar el botón de WhatsApp
             whatsappBtn.addEventListener('click', function() {
                 if (selectedNumbers.length === 0) {
-                    alert('Por favor, selecciona al menos un número para participar.');
+                    showNotification('Por favor, selecciona al menos un número para participar.', 'error');
                     return;
                 }
                 
                 const phoneNumber = '5353086152';
-                const message = `Hola, estoy interesado en participar en la rifa de la lavadora OCEAN. Quisiera reservar el(s) número(s): ${selectedNumbers.join(', ')}.`;
+                const totalCost = selectedNumbers.length * 2000;
+                const message = `Hola, estoy interesado en participar en la rifa de la lavadora OCEAN. Quisiera reservar el(s) número(s): ${selectedNumbers.join(', ')}. Total a pagar: ${totalCost} CUP.`;
                 const encodedMessage = encodeURIComponent(message);
                 const whatsappURL = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
                 
+                // Abrir WhatsApp
                 window.open(whatsappURL, '_blank');
                 
-                // Marcar números como vendidos (esto sería después del pago)
-                // En una implementación real, esto se haría después de confirmar el pago
-                // soldNumbers = soldNumbers.concat(selectedNumbers);
-                // localStorage.setItem('soldNumbers', JSON.stringify(soldNumbers));
+                // Guardar números como reservados
+                reserveNumbers(selectedNumbers);
                 
-                // selectedNumbers = [];
-                // document.querySelectorAll('.number.selected').forEach(el => {
-                //     el.classList.remove('selected');
-                //     el.classList.add('sold');
-                // });
+                // Mostrar notificación
+                showNotification(`¡Éxito! Has reservado los números: ${selectedNumbers.join(', ')}`);
+                
+                // Reiniciar selección
+                selectedNumbers = [];
+                whatsappBtn.disabled = true;
             });
+            
+            // Función para reservar números
+            function reserveNumbers(numbers) {
+                // Agregar nuevos números a la lista de reservados
+                reservedNumbers = [...reservedNumbers, ...numbers];
+                
+                // Guardar en localStorage
+                localStorage.setItem('reservedNumbers', JSON.stringify(reservedNumbers));
+                
+                // Marcar números como reservados en la interfaz
+                numbers.forEach(number => {
+                    const numberElement = document.querySelector(`.number[data-number="${number}"]`);
+                    if (numberElement) {
+                        numberElement.classList.remove('selected');
+                        numberElement.classList.add('reserved');
+                        
+                        // Remover el event listener para que no se pueda volver a seleccionar
+                        numberElement.replaceWith(numberElement.cloneNode(true));
+                    }
+                });
+            }
+            
+            // Función para mostrar notificación
+            function showNotification(message, type = 'success') {
+                notification.textContent = message;
+                notification.style.background = type === 'success' ? '#4cd964' : '#ff6b6b';
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
         });
     </script>
 </body>
