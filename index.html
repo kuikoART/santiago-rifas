@@ -35,6 +35,10 @@
     .hint{font-size:12px;color:#eee}
     .form{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
     input{padding:10px;border:1px solid #ddd;border-radius:10px}
+    .modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:none;justify-content:center;align-items:center;z-index:1000}
+    .modal-content{background:white;padding:20px;border-radius:12px;max-width:400px;width:100%}
+    .modal h3{margin-top:0}
+    .modal-buttons{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
   </style>
 </head>
 <body>
@@ -93,6 +97,19 @@
 
   <div class="footer">Sitio: santiago-rifas.vercel.app</div>
 
+  <!-- Modal para PIN de administrador -->
+  <div id="adminModal" class="modal">
+    <div class="modal-content">
+      <h3>Acceso de Administrador</h3>
+      <p>Introduce el PIN para confirmar la venta:</p>
+      <input type="password" id="pinInput" placeholder="PIN de administrador">
+      <div class="modal-buttons">
+        <button id="cancelPin" class="secondary">Cancelar</button>
+        <button id="confirmPin" class="warn">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== Firebase + Lógica completa en un solo archivo ===== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
@@ -101,19 +118,18 @@
       doc, getDoc, setDoc, runTransaction, onSnapshot, collection, query, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-    /* === <<< PEGA AQUÍ TU firebaseConfig (el real) y borra este ejemplo >>> === */
+    // Configuración de Firebase - REEMPLAZA CON TU CONFIGURACIÓN REAL
     const firebaseConfig = {
-  apiKey: "AIzaSyA1qpdTkaZp40oefb8rAT…",
-  authDomain: "santiago-rifas.firebaseapp.com",
-  projectId: "santiago-rifas",
-  storageBucket: "santiago-rifas.appspot.com",
-  messagingSenderId: "1000570902327",
-  appId: "1:1000570902327:web:b668bf…",
-  measurementId: "G-2EZG6TP8R5"
-};
-    /* ========================================================================== */
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_PROYECTO.firebaseapp.com",
+      projectId: "TU_PROYECTO",
+      storageBucket: "TU_PROYECTO.appspot.com",
+      messagingSenderId: "TU_SENDER_ID",
+      appId: "TU_APP_ID",
+      measurementId: "TU_MEASUREMENT_ID"
+    };
 
-    /* ====== Ajustes negocio / WhatsApp ====== */
+    // ====== Ajustes negocio / WhatsApp ======
     const ADMIN_PIN = "123456";           // cámbialo
     const TOTAL_TICKETS = 100;
     const RESERVE_MINUTES = 10;
@@ -122,94 +138,150 @@
     const WHATSAPP_ADMIN = "5353086152";  // sin '+'
     const PAYMENT_INSTRUCTIONS =
       "Método de pago: Transfermóvil o en efectivo. Enviar comprobante por aquí.";
-    /* ======================================== */
+    // ========================================
 
-    // Firestore robusto (móviles/redes caprichosas)
+    // Inicializar Firebase
     const app = initializeApp(firebaseConfig);
-    const db  = initializeFirestore(app, {
-      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
-      experimentalAutoDetectLongPolling: true,
-      useFetchStreams: false
+    
+    // Inicializar Firestore con persistencia offline
+    const db = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
     });
 
-    const USER_ID = localStorage.getItem("raf_uid") || (()=>{
-      const id = crypto.randomUUID(); localStorage.setItem("raf_uid", id); return id;
+    // Generar ID único de usuario
+    const USER_ID = localStorage.getItem("raf_uid") || (() => {
+      const id = crypto.randomUUID(); 
+      localStorage.setItem("raf_uid", id); 
+      return id;
     })();
 
-    const $ = s=>document.querySelector(s);
+    // Referencias a elementos del DOM
+    const $ = s => document.querySelector(s);
     const grid = $('#grid'), reserveBtn = $('#reserveBtn'), clearBtn = $('#clearBtn'), sellBtn = $('#sellBtn');
     const statusEl = $('#status');
-    const tags = { total:$('#totalTag'), free:$('#freeTag'), res:$('#reservedTag'), sold:$('#soldTag') };
+    const tags = {
+      total: $('#totalTag'), 
+      free: $('#freeTag'), 
+      res: $('#reservedTag'), 
+      sold: $('#soldTag')
+    };
+    const nameInp = $('#name');
+    const phoneInp = $('#phone');
+    const adminModal = $('#adminModal');
+    const pinInput = $('#pinInput');
+    const cancelPin = $('#cancelPin');
+    const confirmPin = $('#confirmPin');
+    
+    // Variables de estado
     const selected = new Set();
-    const nameInp = $('#name'); const phoneInp = $('#phone');
+    let numbersToSell = [];
 
+    // Utilidades
     const ticketId = n => `${RAFFLE_ID}_${n}`;
-    const numLabel = n => n.toString().padStart(2,'0');
+    const numLabel = n => n.toString().padStart(2, '0');
 
-    function buildTicket(n, data){
+    // Construir elemento de boleto
+    function buildTicket(n, data) {
       const el = document.createElement('div');
       el.className = 'ticket available';
       el.textContent = numLabel(n);
+      el.dataset.number = n;
+      
       const now = Date.now();
       let st = data?.status || 'available';
-      const until = data?.reservedUntil ? (data.reservedUntil.toMillis ? data.reservedUntil.toMillis() : new Date(data.reservedUntil).getTime()) : 0;
-      if(st==='reserved' && until<now) st='available';
-      if(st==='reserved') el.className='ticket reserved';
-      if(st==='sold') el.className='ticket sold';
-      if(st==='available'){
-        el.addEventListener('click', ()=>{
-          if(el.classList.contains('selected')){ el.classList.remove('selected'); selected.delete(n); }
-          else{ el.classList.add('selected'); selected.add(n); }
-          reserveBtn.disabled = selected.size===0;
-          statusEl.textContent = selected.size ? `Seleccionados: ${[...selected].sort((a,b)=>a-b).map(numLabel).join(', ')}` : '';
+      
+      // Verificar si la reserva ha expirado
+      const until = data?.reservedUntil ? 
+        (data.reservedUntil.toMillis ? data.reservedUntil.toMillis() : new Date(data.reservedUntil).getTime()) : 0;
+      
+      if (st === 'reserved' && until < now) st = 'available';
+      
+      // Aplicar clase según estado
+      if (st === 'reserved') el.className = 'ticket reserved';
+      if (st === 'sold') el.className = 'ticket sold';
+      
+      // Agregar evento de clic solo si está disponible
+      if (st === 'available') {
+        el.addEventListener('click', () => {
+          if (el.classList.contains('selected')) {
+            el.classList.remove('selected');
+            selected.delete(n);
+          } else {
+            el.classList.add('selected');
+            selected.add(n);
+          }
+          reserveBtn.disabled = selected.size === 0;
+          statusEl.textContent = selected.size ? 
+            `Seleccionados: ${[...selected].sort((a, b) => a - b).map(numLabel).join(', ')}` : '';
         });
       }
+      
       return el;
     }
 
-    function draw(map){
+    // Dibujar la cuadrícula de boletos
+    function draw(map) {
       grid.innerHTML = '';
-      let free=0,res=0,sold=0;
-      for(let i=1;i<=TOTAL_TICKETS;i++){
+      let free = 0, res = 0, sold = 0;
+      
+      for (let i = 1; i <= TOTAL_TICKETS; i++) {
         const data = map.get(ticketId(i));
         grid.appendChild(buildTicket(i, data));
+        
         const st = !data ? 'available' :
-          data.status==='sold' ? 'sold' :
-          (data.status==='reserved' && ((data.reservedUntil?.toMillis?.() ?? new Date(data.reservedUntil||0).getTime())>Date.now())) ? 'reserved' : 'available';
-        if(st==='available') free++; if(st==='reserved') res++; if(st==='sold') sold++;
+          data.status === 'sold' ? 'sold' :
+          (data.status === 'reserved' && 
+           ((data.reservedUntil?.toMillis?.() ?? new Date(data.reservedUntil || 0).getTime()) > Date.now())) ? 
+           'reserved' : 'available';
+        
+        if (st === 'available') free++;
+        if (st === 'reserved') res++;
+        if (st === 'sold') sold++;
       }
+      
       tags.total.textContent = `Boletos: ${TOTAL_TICKETS}`;
-      tags.free.textContent  = `Libres: ${free}`;
-      tags.res.textContent   = `Reservados: ${res}`;
-      tags.sold.textContent  = `Vendidos: ${sold}`;
+      tags.free.textContent = `Libres: ${free}`;
+      tags.res.textContent = `Reservados: ${res}`;
+      tags.sold.textContent = `Vendidos: ${sold}`;
     }
 
-    onSnapshot(query(collection(db,"tickets")), snap=>{
-      const map=new Map(); snap.forEach(d=>map.set(d.id,d.data())); draw(map);
+    // Escuchar cambios en Firestore
+    onSnapshot(query(collection(db, "tickets")), snap => {
+      const map = new Map();
+      snap.forEach(d => map.set(d.id, d.data()));
+      draw(map);
     });
 
-    // Crea docs si faltan
-    (async()=>{
-      for(let i=1;i<=TOTAL_TICKETS;i++){
-        const ref = doc(db,"tickets",ticketId(i));
+    // Crear documentos si faltan
+    (async () => {
+      for (let i = 1; i <= TOTAL_TICKETS; i++) {
+        const ref = doc(db, "tickets", ticketId(i));
         const ss = await getDoc(ref);
-        if(!ss.exists()){
-          await setDoc(ref,{status:"available",raffle:RAFFLE_ID,number:i,updatedAt:serverTimestamp()});
+        if (!ss.exists()) {
+          await setDoc(ref, {
+            status: "available",
+            raffle: RAFFLE_ID,
+            number: i,
+            updatedAt: serverTimestamp()
+          });
         }
       }
     })();
 
-    // Acciones
-    clearBtn.addEventListener('click', ()=>{
-      selected.clear(); document.querySelectorAll('.ticket.selected').forEach(e=>e.classList.remove('selected'));
-      reserveBtn.disabled=true; statusEl.textContent='';
+    // Limpiar selección
+    clearBtn.addEventListener('click', () => {
+      selected.clear();
+      document.querySelectorAll('.ticket.selected').forEach(e => e.classList.remove('selected'));
+      reserveBtn.disabled = true;
+      statusEl.textContent = '';
     });
 
-    function openWhatsAppMessage(numbers, minutesLeft){
-      const sorted = [...numbers].sort((a,b)=>a-b);
+    // Abrir WhatsApp con mensaje de reserva
+    function openWhatsAppMessage(numbers, minutesLeft) {
+      const sorted = [...numbers].sort((a, b) => a - b);
       const total = sorted.length * PRICE_PER_TICKET;
       const cliente = (nameInp.value || "Cliente");
-      const telCli  = phoneInp.value ? `\nWhatsApp cliente: ${phoneInp.value}` : "";
+      const telCli = phoneInp.value ? `\nWhatsApp cliente: ${phoneInp.value}` : "";
       const texto = 
 `Hola, soy ${cliente}.
 Acabo de reservar estos números: ${sorted.map(numLabel).join(', ')}.
@@ -220,51 +292,145 @@ ${PAYMENT_INSTRUCTIONS}
 Enlace del sitio: ${location.origin}${location.pathname}#comprar${telCli}`;
       const url = `https://wa.me/${WHATSAPP_ADMIN}?text=${encodeURIComponent(texto)}`;
       const win = window.open(url, '_blank');
-      if(!win) alert("Activa ventanas emergentes para abrir WhatsApp automáticamente.");
+      if (!win) alert("Activa ventanas emergentes para abrir WhatsApp automáticamente.");
     }
 
-    reserveBtn.addEventListener('click', async ()=>{
-      if(!selected.size) return; reserveBtn.disabled=true;
-      try{
-        await Promise.all([...selected].map(n=>{
-          const ref = doc(db,"tickets",ticketId(n));
-          return runTransaction(db, async tx=>{
-            const snap = await tx.get(ref); const d=snap.data()||{status:"available"}; const now=Date.now();
-            const until = d?.reservedUntil ? (d.reservedUntil.toMillis ? d.reservedUntil.toMillis() : new Date(d.reservedUntil).getTime()) : 0;
-            const can = d.status==="available" || (d.status==="reserved" && until<now);
-            if(!can) throw new Error(`El ${numLabel(n)} ya no está disponible`);
-            tx.set(ref,{
-              status:"reserved", reservedBy:USER_ID,
-              reservedUntil:new Date(now+RESERVE_MINUTES*60*1000),
-              updatedAt:serverTimestamp(), raffle:RAFFLE_ID, number:n
-            },{merge:true});
+    // Reservar boletos seleccionados
+    reserveBtn.addEventListener('click', async () => {
+      if (!selected.size) return;
+      
+      // Validar nombre
+      if (!nameInp.value.trim()) {
+        alert("Por favor, ingresa tu nombre para reservar.");
+        nameInp.focus();
+        return;
+      }
+      
+      reserveBtn.disabled = true;
+      reserveBtn.textContent = "Reservando...";
+      
+      try {
+        await Promise.all([...selected].map(n => {
+          const ref = doc(db, "tickets", ticketId(n));
+          return runTransaction(db, async tx => {
+            const snap = await tx.get(ref);
+            const d = snap.data() || { status: "available" };
+            const now = Date.now();
+            
+            // Verificar si la reserva ha expirado
+            const until = d?.reservedUntil ? 
+              (d.reservedUntil.toMillis ? d.reservedUntil.toMillis() : new Date(d.reservedUntil).getTime()) : 0;
+            
+            const canReserve = d.status === "available" || (d.status === "reserved" && until < now);
+            
+            if (!canReserve) throw new Error(`El ${numLabel(n)} ya no está disponible`);
+            
+            tx.set(ref, {
+              status: "reserved",
+              reservedBy: USER_ID,
+              reservedUntil: new Date(now + RESERVE_MINUTES * 60 * 1000),
+              updatedAt: serverTimestamp(),
+              raffle: RAFFLE_ID,
+              number: n,
+              customerName: nameInp.value.trim(),
+              customerPhone: phoneInp.value.trim() || null
+            }, { merge: true });
           });
         }));
+        
         openWhatsAppMessage(selected, RESERVE_MINUTES);
         alert(`¡Reservado! Tienes ${RESERVE_MINUTES} min para pagar/confirmar. Se abrió WhatsApp con tus datos.`);
-      }catch(e){ alert(e.message||"Algún número ya estaba tomado."); }
-      finally{ clearBtn.click(); }
+      } catch (e) {
+        alert(e.message || "Algún número ya estaba tomado. Actualiza la página e intenta de nuevo.");
+        console.error("Error en reserva:", e);
+      } finally {
+        clearBtn.click();
+        reserveBtn.textContent = "Reservar selección (10 min)";
+      }
     });
 
-    // Admin: marcar vendidos con PIN
-    sellBtn.addEventListener('click', async ()=>{
-      const pin = prompt("PIN admin:"); if(pin!=="123456" && pin!==ADMIN_PIN){ alert("PIN incorrecto."); return; }
-      const list = prompt("Números a marcar VENDIDOS (coma). Ej: 7,12,33"); if(!list) return;
-      const nums = list.split(',').map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n)&&n>=1&&n<=TOTAL_TICKETS);
-      try{
-        await Promise.all(nums.map(n=>{
-          const ref = doc(db,"tickets",ticketId(n));
-          return runTransaction(db, async tx=>{
-            const snap = await tx.get(ref); if(!snap.exists()) throw new Error(`No existe ${n}`);
-            const d=snap.data(); if(d.status==="sold") return;
-            const until = d?.reservedUntil ? (d.reservedUntil.toMillis ? d.reservedUntil.toMillis() : new Date(d.reservedUntil).getTime()) : 0;
-            if(d.status==="reserved" && until<Date.now()) throw new Error(`Reserva vencida: ${numLabel(n)}`);
-            tx.set(ref,{status:"sold",soldAt:new Date(),updatedAt:serverTimestamp()},{merge:true});
+    // Mostrar modal para PIN de administrador
+    sellBtn.addEventListener('click', () => {
+      const list = prompt("Números a marcar como VENDIDOS (separados por coma). Ej: 7,12,33");
+      if (!list) return;
+      
+      numbersToSell = list.split(',')
+        .map(s => parseInt(s.trim(), 10))
+        .filter(n => !isNaN(n) && n >= 1 && n <= TOTAL_TICKETS);
+      
+      if (numbersToSell.length === 0) {
+        alert("No se ingresaron números válidos.");
+        return;
+      }
+      
+      pinInput.value = "";
+      adminModal.style.display = "flex";
+      pinInput.focus();
+    });
+
+    // Confirmar PIN de administrador
+    confirmPin.addEventListener('click', async () => {
+      const pin = pinInput.value.trim();
+      if (pin !== ADMIN_PIN) {
+        alert("PIN incorrecto.");
+        return;
+      }
+      
+      adminModal.style.display = "none";
+      sellBtn.disabled = true;
+      sellBtn.textContent = "Procesando...";
+      
+      try {
+        await Promise.all(numbersToSell.map(n => {
+          const ref = doc(db, "tickets", ticketId(n));
+          return runTransaction(db, async tx => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) throw new Error(`No existe el boleto ${n}`);
+            
+            const d = snap.data();
+            if (d.status === "sold") return; // Ya está vendido, no hacer nada
+            
+            const until = d?.reservedUntil ? 
+              (d.reservedUntil.toMillis ? d.reservedUntil.toMillis() : new Date(d.reservedUntil).getTime()) : 0;
+            
+            // Si está reservado y la reserva no ha expirado, no permitir venta
+            if (d.status === "reserved" && until > Date.now()) {
+              throw new Error(`El número ${numLabel(n)} está reservado y la reserva aún es válida.`);
+            }
+            
+            // Marcar como vendido
+            tx.set(ref, {
+              status: "sold",
+              soldAt: new Date(),
+              updatedAt: serverTimestamp()
+            }, { merge: true });
           });
         }));
-        alert("Venta confirmada.");
-      }catch(e){ alert(e.message||"Error vendiendo."); }
+        
+        alert(`Venta confirmada para los números: ${numbersToSell.map(numLabel).join(', ')}`);
+      } catch (e) {
+        alert(e.message || "Error al procesar la venta.");
+        console.error("Error en venta:", e);
+      } finally {
+        sellBtn.disabled = false;
+        sellBtn.textContent = "Confirmar pago";
+        numbersToSell = [];
+      }
+    });
+
+    // Cancelar ingreso de PIN
+    cancelPin.addEventListener('click', () => {
+      adminModal.style.display = "none";
+      numbersToSell = [];
+    });
+
+    // Cerrar modal con ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === "Escape" && adminModal.style.display === "flex") {
+        adminModal.style.display = "none";
+        numbersToSell = [];
+      }
     });
   </script>
 </body>
-</html>
+  </html>
