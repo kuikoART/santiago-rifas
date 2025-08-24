@@ -1,85 +1,674 @@
-<!-- Producto 11 -->
-<div class="producto-card" data-categoria="hogar">
-  <img src="tienda11.jpg" alt="Olla Multifuncional WYNWOOD 6L" class="producto-img" />
-  <div class="producto-info">
-    <h3 class="producto-titulo">Olla Multifuncional WYNWOOD 6L</h3>
-    <p class="producto-precio">63 USD</p>
-    <p class="producto-desc">Olla eléctrica multipropósito con funciones inteligentes</p>
-    <p class="producto-disponibilidad">Disponible: 2 unidades</p>
-    <div class="cantidad-selector">
-      <button class="cantidad-btn minus">-</button>
-      <input type="number" value="1" min="1" class="cantidad-input" />
-      <button class="cantidad-btn plus">+</button>
-    </div>
-    <button class="add-to-cart">Añadir al carrito</button>
-  </div>
-</div>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rifa Lavadora Automática OCEAN</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #25D366;
+            --primary-dark: #128C7E;
+            --secondary: #2c3e50;
+            --accent: #e74c3c;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --success: #28a745;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(to right, #fdfbfb, #ebedee);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        header {
+            background: linear-gradient(to right, var(--secondary), #3498db);
+            color: white;
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo i {
+            margin-right: 10px;
+            color: var(--primary);
+        }
+        
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+        
+        nav ul li {
+            margin-left: 1.5rem;
+        }
+        
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        nav ul li a:hover {
+            color: var(--primary);
+        }
+        
+        .hero {
+            padding: 4rem 0;
+            text-align: center;
+            background: linear-gradient(rgba(44, 62, 80, 0.8), rgba(52, 152, 219, 0.8)), url('https://images.unsplash.com/photo-1626208640402-4f5c5dc60c56?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+        }
+        
+        .hero h1 {
+            font-size: 2.8rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto 2rem;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            background: #c0392b;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-whatsapp {
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            padding: 1rem 2rem;
+            margin: 2rem auto;
+            width: 80%;
+            max-width: 350px;
+        }
+        
+        .btn-whatsapp:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+        
+        .btn-whatsapp i {
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+        
+        .prize-section {
+            padding: 4rem 0;
+            text-align: center;
+        }
+        
+        .section-title {
+            font-size: 2.2rem;
+            margin-bottom: 3rem;
+            position: relative;
+            display: inline-block;
+            color: var(--secondary);
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+        
+        .prize-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+        }
+        
+        .prize-card:hover {
+            transform: translateY(-10px);
+        }
+        
+        .prize-image {
+            height: 350px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+        }
+        
+        .prize-image img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transition: transform 0.5s ease;
+        }
+        
+        .prize-card:hover .prize-image img {
+            transform: scale(1.05);
+        }
+        
+        .prize-details {
+            padding: 2rem;
+        }
+        
+        .prize-title {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--secondary);
+        }
+        
+        .prize-description {
+            margin-bottom: 1.5rem;
+            color: #666;
+            text-align: left;
+        }
+        
+        .prize-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+        }
+        
+        .ticket-section {
+            padding: 4rem 0;
+            background: var(--light);
+        }
+        
+        .ticket-info {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .ticket-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            gap: 10px;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+        }
+        
+        .ticket {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .ticket:hover {
+            border-color: var(--primary);
+            transform: scale(1.05);
+        }
+        
+        .ticket.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .ticket.sold {
+            background: #ccc;
+            color: #777;
+            cursor: not-allowed;
+        }
+        
+        .cart {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .cart-items {
+            margin-bottom: 1.5rem;
+        }
+        
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .cart-total {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding: 1rem 0;
+            border-top: 2px solid #eee;
+            margin-top: 1rem;
+        }
+        
+        .whatsapp-payment {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #eee;
+        }
+        
+        .whatsapp-payment p {
+            margin-bottom: 1.5rem;
+            color: #666;
+        }
+        
+        .instructions {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 2rem auto;
+            max-width: 600px;
+            text-align: left;
+        }
+        
+        .instructions h3 {
+            color: var(--secondary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .instructions h3 i {
+            margin-right: 10px;
+        }
+        
+        .instructions ol {
+            padding-left: 1.5rem;
+        }
+        
+        .instructions li {
+            margin-bottom: 0.8rem;
+        }
+        
+        footer {
+            background: var(--dark);
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+        }
+        
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .social-icons {
+            margin: 1.5rem 0;
+        }
+        
+        .social-icons a {
+            color: white;
+            font-size: 1.5rem;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .social-icons a:hover {
+            color: var(--primary);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem;
+            background: var(--success);
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+        }
+        
+        .notification.error {
+            background: #dc3545;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification i {
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+            }
+            
+            nav ul {
+                margin-top: 1rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            nav ul li {
+                margin: 0.5rem;
+            }
+            
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+            
+            .ticket-grid {
+                grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+            }
+            
+            .ticket {
+                height: 50px;
+                font-size: 0.9rem;
+            }
+            
+            .btn-whatsapp {
+                width: 90%;
+                font-size: 1rem;
+                padding: 0.8rem 1.5rem;
+            }
+            
+            .prize-image {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <div class="logo">
+                <i class="fas fa-ticket-alt"></i>
+                <span>Rifa OCEAN</span>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#inicio">Inicio</a></li>
+                    <li><a href="#premio">Premio</a></li>
+                    <li><a href="#comprar">Comprar Boletos</a></li>
+                    <li><a href="#contacto">Contacto</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
 
-<!-- Producto 12 -->
-<div class="producto-card" data-categoria="hogar">
-  <img src="tienda12.jpg" alt="Calentador de Agua WYNWOOD 50L" class="producto-img" />
-  <div class="producto-info">
-    <h3 class="producto-titulo">Calentador de Agua WYNWOOD 50L</h3>
-    <p class="producto-precio">290 USD</p>
-    <p class="producto-desc">Calentador eléctrico con capacidad para 50 litros</p>
-    <p class="producto-disponibilidad">Disponible: 2 unidades</p>
-    <div class="cantidad-selector">
-      <button class="cantidad-btn minus">-</button>
-      <input type="number" value="1" min="1" class="cantidad-input" />
-      <button class="cantidad-btn plus">+</button>
-    </div>
-    <button class="add-to-cart">Añadir al carrito</button>
-  </div>
-</div>
+    <section class="hero" id="inicio">
+        <div class="container">
+            <h1>¡Gran Rifa de una Lavadora Automática OCEAN!</h1>
+            <p>Participa por esta moderna lavadora automática. ¡Cada boleto te acerca a ganar este increíble premio!</p>
+            <a href="#comprar" class="btn">Comprar Boletos</a>
+        </div>
+    </section>
 
-<!-- Producto 13 -->
-<div class="producto-card" data-categoria="hogar">
-  <img src="tienda13.jpg" alt="Calentador de Agua WYNWOOD 80L" class="producto-img" />
-  <div class="producto-info">
-    <h3 class="producto-titulo">Calentador de Agua WYNWOOD 80L</h3>
-    <p class="producto-precio">325 USD</p>
-    <p class="producto-desc">Calentador eléctrico de alta capacidad y eficiencia</p>
-    <p class="producto-disponibilidad">Disponible: 2 unidades</p>
-    <div class="cantidad-selector">
-      <button class="cantidad-btn minus">-</button>
-      <input type="number" value="1" min="1" class="cantidad-input" />
-      <button class="cantidad-btn plus">+</button>
-    </div>
-    <button class="add-to-cart">Añadir al carrito</button>
-  </div>
-</div>
+    <section class="prize-section" id="premio">
+        <div class="container">
+            <h2 class="section-title">Premio Principal</h2>
+            <div class="prize-card">
+                <div class="prize-image">
+                    <!-- Reemplaza la URL con la imagen de tu lavadora OCEAN -->
+                    <img src="ocean1" alt="Lavadora Automática OCEAN">
+                </div>
+                <div class="prize-details">
+                    <h3 class="prize-title">Lavadora Automática OCEAN</h3>
+                    <p class="prize-description">
+                        Esta moderna lavadora automática cuenta con capacidad de 8.0 kg, múltiples programas de lavado, 
+                        eficiencia energética A+++, sistema de ahorro de agua y tecnología silenciosa. 
+                        ¡Ideal para simplificar tu día a día!
+                    </p>
+                    <div class="prize-value">Valor: 490 USD</div>
+                    <a href="#comprar" class="btn">Seleccionar Números</a>
+                </div>
+            </div>
+        </div>
+    </section>
 
-<!-- Producto 14 -->
-<div class="producto-card" data-categoria="hogar">
-  <img src="tienda14.jpg" alt="Nevera Horizontal MILEXUS 11.2 pies" class="producto-img" />
-  <div class="producto-info">
-    <h3 class="producto-titulo">Nevera Horizontal MILEXUS 11.2 pies</h3>
-    <p class="producto-precio">470 USD</p>
-    <p class="producto-desc">Nevera horizontal amplia y eficiente</p>
-    <p class="producto-disponibilidad">Disponible: 2 unidades</p>
-    <div class="cantidad-selector">
-      <button class="cantidad-btn minus">-</button>
-      <input type="number" value="1" min="1" class="cantidad-input" />
-      <button class="cantidad-btn plus">+</button>
-    </div>
-    <button class="add-to-cart">Añadir al carrito</button>
-  </div>
-</div>
+    <section class="ticket-section" id="comprar">
+        <div class="container">
+            <h2 class="section-title">Selecciona tus Boletos</h2>
+            <div class="ticket-info">
+                <p>Elige tus números de la suerte. Cada boleto tiene un valor de 2000 CUP.</p>
+                <p>Boletos disponibles: <span id="available">100</span>/100</p>
+            </div>
+            
+            <div class="ticket-grid" id="ticket-grid">
+                <!-- Los números se generarán con JavaScript -->
+            </div>
+            
+            <div class="cart">
+                <h3>Tu Selección</h3>
+                <div class="cart-items" id="cart-items">
+                    <p class="empty-cart">No has seleccionado ningún boleto aún.</p>
+                </div>
+                <div class="cart-total">
+                    <span>Total a pagar:</span>
+                    <span id="cart-total">0 CUP</span>
+                </div>
+                
+                <div class="whatsapp-payment">
+                    <p>Para confirmar tu compra, contáctanos por WhatsApp</p>
+                    <a id="whatsapp-btn" class="btn btn-whatsapp" href="#" target="_blank">
+                        <i class="fab fa-whatsapp"></i> Pagar por WhatsApp
+                    </a>
+                </div>
+                
+                <div class="instructions">
+                    <h3><i class="fas fa-info-circle"></i> Instrucciones de compra:</h3>
+                    <ol>
+                        <li>Selecciona los números que deseas comprar (2000 CUP cada uno)</li>
+                        <li>Haz clic en el botón de WhatsApp para contactarnos</li>
+                        <li>Te enviaremos la información de pago por WhatsApp</li>
+                        <li>Realiza el pago y envíanos el comprobante</li>
+                        <li>¡Listo! Tus boletos quedarán reservados</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
 
-<!-- Producto 15 -->
-<div class="producto-card" data-categoria="hogar">
-  <img src="tienda15.jpg" alt="Nevera MILEXUS 16 pies (Congelación Seca)" class="producto-img" />
-  <div class="producto-info">
-    <h3 class="producto-titulo">Nevera MILEXUS 16 pies (Congelación Seca)</h3>
-    <p class="producto-precio">Consultar</p>
-    <p class="producto-desc">Refrigerador con sistema de congelación seca</p>
-    <p class="producto-disponibilidad">Disponible: 2 unidades</p>
-    <div class="cantidad-selector">
-      <button class="cantidad-btn minus">-</button>
-      <input type="number" value="1" min="1" class="cantidad-input" />
-      <button class="cantidad-btn plus">+</button>
-    </div>
-    <button class="add-to-cart">Añadir al carrito</button>
-  </div>
-</div>
+    <footer id="contacto">
+        <div class="container footer-content">
+            <h3>Rifa Lavadora OCEAN</h3>
+            <p>Compra tus boletos de forma fácil y segura a través de WhatsApp</p>
+            <div class="social-icons">
+                <a href="#"><i class="fab fa-facebook"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+                <a href="#"><i class="fab fa-whatsapp"></i></a>
+            </div>
+            <p>&copy; 2023 Rifa Lavadora OCEAN. Todos los derechos reservados.</p>
+        </div>
+    </footer>
 
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <span id="notification-text">¡Operación exitosa!</span>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Generar números de rifa
+            const ticketGrid = document.getElementById('ticket-grid');
+            const availableTickets = 100;
+            const totalTickets = 100;
+            
+            // Generar números del 1 al 100
+            for (let i = 1; i <= totalTickets; i++) {
+                const ticket = document.createElement('div');
+                ticket.className = 'ticket';
+                ticket.textContent = i;
+                ticket.addEventListener('click', toggleTicket);
+                ticketGrid.appendChild(ticket);
+            }
+            
+            // Carrito de compras
+            let selectedTickets = [];
+            const cartItems = document.getElementById('cart-items');
+            const cartTotal = document.getElementById('cart-total');
+            const availableElement = document.getElementById('available');
+            const whatsappBtn = document.getElementById('whatsapp-btn');
+            
+            function toggleTicket() {
+                const ticketNumber = parseInt(this.textContent);
+                
+                if (this.classList.contains('selected')) {
+                    // Quitar del carrito
+                    this.classList.remove('selected');
+                    selectedTickets = selectedTickets.filter(num => num !== ticketNumber);
+                } else {
+                    // Agregar al carrito
+                    this.classList.add('selected');
+                    selectedTickets.push(ticketNumber);
+                }
+                
+                updateCart();
+            }
+            
+            function updateCart() {
+                // Ordenar números seleccionados
+                selectedTickets.sort((a, b) => a - b);
+                
+                // Actualizar carrito
+                if (selectedTickets.length === 0) {
+                    cartItems.innerHTML = '<p class="empty-cart">No has seleccionado ningún boleto aún.</p>';
+                    whatsappBtn.style.display = 'none';
+                } else {
+                    cartItems.innerHTML = '';
+                    selectedTickets.forEach(ticket => {
+                        const item = document.createElement('div');
+                        item.className = 'cart-item';
+                        item.innerHTML = `
+                            <span>Boleto #${ticket}</span>
+                            <span>2000 CUP</span>
+                        `;
+                        cartItems.appendChild(item);
+                    });
+                    whatsappBtn.style.display = 'flex';
+                }
+                
+                // Actualizar total
+                const total = selectedTickets.length * 2000;
+                cartTotal.textContent = `${total.toLocaleString()} CUP`;
+                
+                // Actualizar contador de disponibles
+                availableElement.textContent = availableTickets - selectedTickets.length;
+                
+                // Actualizar enlace de WhatsApp
+                updateWhatsAppLink();
+            }
+            
+            function updateWhatsAppLink() {
+                if (selectedTickets.length > 0) {
+                    const phoneNumber = "5353086152"; // Número sin espacios ni símbolos
+                    const message = `¡Hola! Estoy interesado en comprar los boletos para la rifa de la lavadora OCEAN. Números: ${selectedTickets.join(', ')}. Total: ${(selectedTickets.length * 2000).toLocaleString()} CUP.`;
+                    const encodedMessage = encodeURIComponent(message);
+                    whatsappBtn.href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+                }
+            }
+            
+            // Mostrar notificación
+            function showNotification(message, type = 'success') {
+                const notification = document.getElementById('notification');
+                const notificationText = document.getElementById('notification-text');
+                
+                notificationText.textContent = message;
+                
+                if (type === 'error') {
+                    notification.classList.add('error');
+                    notification.querySelector('i').className = 'fas fa-exclamation-circle';
+                } else {
+                    notification.classList.remove('error');
+                    notification.querySelector('i').className = 'fas fa-check-circle';
+                }
+                
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+            
+            // Inicializar
+            updateCart();
+            
+            // Simular venta de boletos al hacer clic en WhatsApp
+            whatsappBtn.addEventListener('click', function() {
+                if (selectedTickets.length === 0) {
+                    showNotification('Por favor selecciona al menos un boleto', 'error');
+                    return;
+                }
+                
+                showNotification('¡Redirigiendo a WhatsApp! Completa tu compra allí.');
+            });
+        });
+    </script>
+</body>
+</html>
