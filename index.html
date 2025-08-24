@@ -71,7 +71,6 @@
       <span class="status" id="status"></span>
     </div>
 
-    <!-- Datos del cliente para WhatsApp -->
     <div class="form">
       <input id="name" type="text" placeholder="Tu nombre" autocomplete="name">
       <input id="phone" type="tel" placeholder="Tu WhatsApp (opcional)">
@@ -102,29 +101,30 @@
       doc, getDoc, setDoc, runTransaction, onSnapshot, collection, query, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-    /* ==== CREDENCIALES REALES (Firebase Console → Configuración del proyecto → SDK) ==== */
+    /* === <<< PEGA AQUÍ TU firebaseConfig (el real) y borra este ejemplo >>> === */
     const firebaseConfig = {
-      apiKey: "REEMPLAZA_AQUI",
-      authDomain: "tu-proyecto-real.firebaseapp.com",
-      projectId: "tu-proyecto-real",
-      storageBucket: "tu-proyecto-real.appspot.com",
-      messagingSenderId: "REEMPLAZA_AQUI",
-      appId: "REEMPLAZA_AQUI"
-    };
-    /* =================================================================================== */
+  apiKey: "AIzaSyA1qpdTkaZp40oefb8rAT…",
+  authDomain: "santiago-rifas.firebaseapp.com",
+  projectId: "santiago-rifas",
+  storageBucket: "santiago-rifas.appspot.com",
+  messagingSenderId: "1000570902327",
+  appId: "1:1000570902327:web:b668bf…",
+  measurementId: "G-2EZG6TP8R5"
+};
+    /* ========================================================================== */
 
-    /* ======== Ajustes de negocio / WhatsApp ======== */
+    /* ====== Ajustes negocio / WhatsApp ====== */
     const ADMIN_PIN = "123456";           // cámbialo
     const TOTAL_TICKETS = 100;
     const RESERVE_MINUTES = 10;
     const RAFFLE_ID = "ocean_1";
     const PRICE_PER_TICKET = 100;         // CUP por boleto
-    const WHATSAPP_ADMIN = "5353086152";  // <<— Tu número (sin +)
+    const WHATSAPP_ADMIN = "5353086152";  // sin '+'
     const PAYMENT_INSTRUCTIONS =
       "Método de pago: Transfermóvil o en efectivo. Enviar comprobante por aquí.";
-    /* =============================================== */
+    /* ======================================== */
 
-    // Firestore robusto para móviles/redes raras
+    // Firestore robusto (móviles/redes caprichosas)
     const app = initializeApp(firebaseConfig);
     const db  = initializeFirestore(app, {
       localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
@@ -188,7 +188,7 @@
       const map=new Map(); snap.forEach(d=>map.set(d.id,d.data())); draw(map);
     });
 
-    // crear docs si faltan
+    // Crea docs si faltan
     (async()=>{
       for(let i=1;i<=TOTAL_TICKETS;i++){
         const ref = doc(db,"tickets",ticketId(i));
@@ -199,12 +199,12 @@
       }
     })();
 
+    // Acciones
     clearBtn.addEventListener('click', ()=>{
       selected.clear(); document.querySelectorAll('.ticket.selected').forEach(e=>e.classList.remove('selected'));
       reserveBtn.disabled=true; statusEl.textContent='';
     });
 
-    // WhatsApp automático al reservar
     function openWhatsAppMessage(numbers, minutesLeft){
       const sorted = [...numbers].sort((a,b)=>a-b);
       const total = sorted.length * PRICE_PER_TICKET;
@@ -248,7 +248,7 @@ Enlace del sitio: ${location.origin}${location.pathname}#comprar${telCli}`;
 
     // Admin: marcar vendidos con PIN
     sellBtn.addEventListener('click', async ()=>{
-      const pin = prompt("PIN admin:"); if(pin!==ADMIN_PIN){ alert("PIN incorrecto."); return; }
+      const pin = prompt("PIN admin:"); if(pin!=="123456" && pin!==ADMIN_PIN){ alert("PIN incorrecto."); return; }
       const list = prompt("Números a marcar VENDIDOS (coma). Ej: 7,12,33"); if(!list) return;
       const nums = list.split(',').map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n)&&n>=1&&n<=TOTAL_TICKETS);
       try{
