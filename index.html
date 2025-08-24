@@ -83,45 +83,50 @@
     <p>Mensajes y soporte por WhatsApp/Telegram.</p>
   </div></section>
 
-  <div class="footer">
-    Sitio: santiago-rifas.vercel.app
-  </div>
+  <div class="footer">Sitio: santiago-rifas.vercel.app</div>
 
   <!-- ===== Firebase + Lógica completa en un solo archivo ===== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, runTransaction, onSnapshot, collection, query, serverTimestamp } 
-      from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import {
+      initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+      doc, getDoc, setDoc, runTransaction, onSnapshot, collection, query, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-    // === CONFIGURA AQUÍ ===
+    // ========= PON AQUÍ TUS CREDENCIALES REALES (Firebase Console → Configuración del proyecto → SDK) =========
     const firebaseConfig = {
-      apiKey: "TU_API_KEY",
-      authDomain: "tu-proyecto.firebaseapp.com",
-      projectId: "tu-proyecto",
-      storageBucket: "tu-proyecto.appspot.com",
-      messagingSenderId: "XXXX",
-      appId: "1:XXXX:web:YYYY"
+      apiKey: "REEMPLAZA_AQUI",
+      authDomain: "tu-proyecto-real.firebaseapp.com",
+      projectId: "tu-proyecto-real",
+      storageBucket: "tu-proyecto-real.appspot.com",
+      messagingSenderId: "REEMPLAZA_AQUI",
+      appId: "REEMPLAZA_AQUI"
     };
-    const ADMIN_PIN = "123456";   // cambia
-    const TOTAL_TICKETS = 100;    // cambia si quieres
+    // ===============================================
+
+    const ADMIN_PIN = "123456";   // cámbialo
+    const TOTAL_TICKETS = 100;
     const RESERVE_MINUTES = 10;
     const RAFFLE_ID = "ocean_1";
 
-    // === INIT ===
+    // Firestore con long-polling (estable en móviles/redes raras)
     const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
+    const db  = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+      experimentalAutoDetectLongPolling: true,
+      useFetchStreams: false
+    });
+
     const USER_ID = localStorage.getItem("raf_uid") || (()=>{
       const id = crypto.randomUUID(); localStorage.setItem("raf_uid", id); return id;
     })();
 
-    // === UI refs ===
     const $ = s=>document.querySelector(s);
     const grid = $('#grid'), reserveBtn = $('#reserveBtn'), clearBtn = $('#clearBtn'), sellBtn = $('#sellBtn');
     const statusEl = $('#status');
     const tags = { total:$('#totalTag'), free:$('#freeTag'), res:$('#reservedTag'), sold:$('#soldTag') };
     const selected = new Set();
 
-    // === helpers ===
     const ticketId = n => `${RAFFLE_ID}_${n}`;
     const numLabel = n => n.toString().padStart(2,'0');
 
@@ -151,8 +156,7 @@
       let free=0,res=0,sold=0;
       for(let i=1;i<=TOTAL_TICKETS;i++){
         const data = map.get(ticketId(i));
-        const el = buildTicket(i, data);
-        grid.appendChild(el);
+        grid.appendChild(buildTicket(i, data));
         const st = !data ? 'available' :
           data.status==='sold' ? 'sold' :
           (data.status==='reserved' && ((data.reservedUntil?.toMillis?.() ?? new Date(data.reservedUntil||0).getTime())>Date.now())) ? 'reserved' : 'available';
@@ -164,12 +168,10 @@
       tags.sold.textContent  = `Vendidos: ${sold}`;
     }
 
-    // === tiempo real ===
     onSnapshot(query(collection(db,"tickets")), snap=>{
       const map=new Map(); snap.forEach(d=>map.set(d.id,d.data())); draw(map);
     });
 
-    // === bootstrap docs ===
     (async()=>{
       for(let i=1;i<=TOTAL_TICKETS;i++){
         const ref = doc(db,"tickets",ticketId(i));
@@ -180,7 +182,6 @@
       }
     })();
 
-    // === acciones ===
     clearBtn.addEventListener('click', ()=>{
       selected.clear(); document.querySelectorAll('.ticket.selected').forEach(e=>e.classList.remove('selected'));
       reserveBtn.disabled=true; statusEl.textContent='';
