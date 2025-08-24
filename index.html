@@ -33,6 +33,8 @@
     .muted{color:#555;font-size:13px} .status{margin-left:auto;font-size:13px}
     .section{padding:16px} .footer{padding:16px;color:#666;font-size:12px;text-align:center}
     .hint{font-size:12px;color:#eee}
+    .form{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+    input{padding:10px;border:1px solid #ddd;border-radius:10px}
   </style>
 </head>
 <body>
@@ -68,6 +70,13 @@
       <span class="tag" id="soldTag">Vendidos: —</span>
       <span class="status" id="status"></span>
     </div>
+
+    <!-- Datos del cliente para WhatsApp -->
+    <div class="form">
+      <input id="name" type="text" placeholder="Tu nombre" autocomplete="name">
+      <input id="phone" type="tel" placeholder="Tu WhatsApp (opcional)">
+    </div>
+
     <div id="grid" class="grid"></div>
   </section>
 
@@ -93,7 +102,7 @@
       doc, getDoc, setDoc, runTransaction, onSnapshot, collection, query, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-    // ========= PON AQUÍ TUS CREDENCIALES REALES (Firebase Console → Configuración del proyecto → SDK) =========
+    /* ==== CREDENCIALES REALES (Firebase Console → Configuración del proyecto → SDK) ==== */
     const firebaseConfig = {
       apiKey: "REEMPLAZA_AQUI",
       authDomain: "tu-proyecto-real.firebaseapp.com",
@@ -102,14 +111,20 @@
       messagingSenderId: "REEMPLAZA_AQUI",
       appId: "REEMPLAZA_AQUI"
     };
-    // ===============================================
+    /* =================================================================================== */
 
-    const ADMIN_PIN = "123456";   // cámbialo
+    /* ======== Ajustes de negocio / WhatsApp ======== */
+    const ADMIN_PIN = "123456";           // cámbialo
     const TOTAL_TICKETS = 100;
     const RESERVE_MINUTES = 10;
     const RAFFLE_ID = "ocean_1";
+    const PRICE_PER_TICKET = 100;         // CUP por boleto
+    const WHATSAPP_ADMIN = "5353086152";  // <<— Tu número (sin +)
+    const PAYMENT_INSTRUCTIONS =
+      "Método de pago: Transfermóvil o en efectivo. Enviar comprobante por aquí.";
+    /* =============================================== */
 
-    // Firestore con long-polling (estable en móviles/redes raras)
+    // Firestore robusto para móviles/redes raras
     const app = initializeApp(firebaseConfig);
     const db  = initializeFirestore(app, {
       localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
@@ -126,6 +141,7 @@
     const statusEl = $('#status');
     const tags = { total:$('#totalTag'), free:$('#freeTag'), res:$('#reservedTag'), sold:$('#soldTag') };
     const selected = new Set();
+    const nameInp = $('#name'); const phoneInp = $('#phone');
 
     const ticketId = n => `${RAFFLE_ID}_${n}`;
     const numLabel = n => n.toString().padStart(2,'0');
@@ -172,6 +188,7 @@
       const map=new Map(); snap.forEach(d=>map.set(d.id,d.data())); draw(map);
     });
 
+    // crear docs si faltan
     (async()=>{
       for(let i=1;i<=TOTAL_TICKETS;i++){
         const ref = doc(db,"tickets",ticketId(i));
@@ -186,6 +203,25 @@
       selected.clear(); document.querySelectorAll('.ticket.selected').forEach(e=>e.classList.remove('selected'));
       reserveBtn.disabled=true; statusEl.textContent='';
     });
+
+    // WhatsApp automático al reservar
+    function openWhatsAppMessage(numbers, minutesLeft){
+      const sorted = [...numbers].sort((a,b)=>a-b);
+      const total = sorted.length * PRICE_PER_TICKET;
+      const cliente = (nameInp.value || "Cliente");
+      const telCli  = phoneInp.value ? `\nWhatsApp cliente: ${phoneInp.value}` : "";
+      const texto = 
+`Hola, soy ${cliente}.
+Acabo de reservar estos números: ${sorted.map(numLabel).join(', ')}.
+Total: ${total} CUP (${sorted.length} x ${PRICE_PER_TICKET}).
+Reserva válida por ${minutesLeft} min.
+
+${PAYMENT_INSTRUCTIONS}
+Enlace del sitio: ${location.origin}${location.pathname}#comprar${telCli}`;
+      const url = `https://wa.me/${WHATSAPP_ADMIN}?text=${encodeURIComponent(texto)}`;
+      const win = window.open(url, '_blank');
+      if(!win) alert("Activa ventanas emergentes para abrir WhatsApp automáticamente.");
+    }
 
     reserveBtn.addEventListener('click', async ()=>{
       if(!selected.size) return; reserveBtn.disabled=true;
@@ -204,11 +240,13 @@
             },{merge:true});
           });
         }));
-        alert(`¡Reservado! Tienes ${RESERVE_MINUTES} min para pagar/confirmar.`);
+        openWhatsAppMessage(selected, RESERVE_MINUTES);
+        alert(`¡Reservado! Tienes ${RESERVE_MINUTES} min para pagar/confirmar. Se abrió WhatsApp con tus datos.`);
       }catch(e){ alert(e.message||"Algún número ya estaba tomado."); }
       finally{ clearBtn.click(); }
     });
 
+    // Admin: marcar vendidos con PIN
     sellBtn.addEventListener('click', async ()=>{
       const pin = prompt("PIN admin:"); if(pin!==ADMIN_PIN){ alert("PIN incorrecto."); return; }
       const list = prompt("Números a marcar VENDIDOS (coma). Ej: 7,12,33"); if(!list) return;
