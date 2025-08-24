@@ -1,436 +1,357 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Rifa Lavadora OCEAN — Compra tus números</title>
-  <style>
-    :root{--blue:#0070f3}
-    *{box-sizing:border-box} body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#f6f7fb;color:#111}
-    header{background:linear-gradient(180deg,#0f9bd7,#0b6bb4);color:#fff;padding:18px 20px}
-    header h1{margin:0;font-size:22px}
-    nav{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:14px}
-    nav a{color:#fff;text-decoration:none;opacity:.95}
-    .hero{display:grid;grid-template-columns:1fr;gap:16px;padding:16px}
-    .card{background:#fff;border:1px solid #eaeaea;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-    .card .p{padding:16px}
-    .hero h2{margin:0 0 6px}
-    .prize{display:flex;gap:16px;align-items:center}
-    .prize img{max-width:280px;border-radius:12px;border:1px solid #eee}
-    .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0 14px}
-    .tag{background:#eef5ff;border:1px solid #d6e6ff;padding:6px 10px;border-radius:999px;font-size:12px}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:10px}
-    .ticket{padding:12px 0;border-radius:10px;text-align:center;cursor:pointer;font-weight:700;border:2px solid transparent;user-select:none;transition:transform .05s ease}
-    .ticket:active{transform:scale(.98)}
-    .available{background:#e6f7ed;border-color:#bfead0}
-    .reserved{background:#fff7d6;border-color:#ffe08a;cursor:not-allowed}
-    .sold{background:#ffd7d7;border-color:#ffa6a6;color:#7a0000;cursor:not-allowed}
-    .selected{outline:3px solid var(--blue)}
-    .actions{position:sticky;bottom:0;background:#fff;padding:12px 16px;border-top:1px solid #eaeaea;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    button{padding:10px 14px;border:0;border-radius:10px;background:var(--blue);color:#fff;font-weight:700;cursor:pointer}
-    button.secondary{background:#111} button.warn{background:#f59e0b}
-    button[disabled]{opacity:.6;cursor:not-allowed}
-    .muted{color:#555;font-size:13px} .status{margin-left:auto;font-size:13px}
-    .section{padding:16px} .footer{padding:16px;color:#666;font-size:12px;text-align:center}
-    .hint{font-size:12px;color:#eee}
-    .form{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
-    input{padding:10px;border:1px solid #ddd;border-radius:10px}
-    .modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:none;justify-content:center;align-items:center;z-index:1000}
-    .modal-content{background:white;padding:20px;border-radius:12px;max-width:400px;width:100%}
-    .modal h3{margin-top:0}
-    .modal-buttons{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
-  </style>
-</head>
-<body>
-  <header>
-    <h1>Rifa Lavadora OCEAN</h1>
-    <nav>
-      <a href="#inicio">Inicio</a><a href="#premio">Premio</a><a href="#comprar">Comprar Boletos</a><a href="#contacto">Contacto</a>
-    </nav>
-    <div class="hint">Verde = libre • Amarillo = reservado • Rojo = vendido</div>
-  </header>
-
-  <section id="inicio" class="hero">
-    <div class="card"><div class="p">
-      <h2>¡Gran Rifa de una Lavadora Automática OCEAN!</h2>
-      <p>Participa y llévate este premio para resolver la casa como un campeón.</p>
-    </div></div>
-  </section>
-
-  <section id="premio" class="section card"><div class="p prize">
-    <img src="ocean1.jpg" alt="Lavadora Automática OCEAN">
-    <div>
-      <h2>Premio Principal</h2>
-      <p>Lavadora automática OCEAN 8 kg, múltiples programas, ahorro de agua y energía.</p>
-      <p><b>Valor referencial:</b> 490 USD</p>
-    </div>
-  </div></section>
-
-  <section id="comprar" class="section">
-    <div class="bar">
-      <span class="tag" id="totalTag">Boletos: —</span>
-      <span class="tag" id="freeTag">Libres: —</span>
-      <span class="tag" id="reservedTag">Reservados: —</span>
-      <span class="tag" id="soldTag">Vendidos: —</span>
-      <span class="status" id="status"></span>
-    </div>
-
-    <div class="form">
-      <input id="name" type="text" placeholder="Tu nombre" autocomplete="name">
-      <input id="phone" type="tel" placeholder="Tu WhatsApp (opcional)">
-    </div>
-
-    <div id="grid" class="grid"></div>
-  </section>
-
-  <div class="actions">
-    <button id="reserveBtn" disabled>Reservar selección (10 min)</button>
-    <button id="clearBtn" class="secondary">Limpiar selección</button>
-    <button id="sellBtn" class="warn" title="Solo admin con PIN">Confirmar pago</button>
-    <div class="muted">Las reservas caducan si no pagas a tiempo.</div>
-  </div>
-
-  <section id="contacto" class="section card"><div class="p">
-    <h2>Contacto</h2>
-    <p>Mensajes y soporte por WhatsApp/Telegram.</p>
-  </div></section>
-
-  <div class="footer">Sitio: santiago-rifas.vercel.app</div>
-
-  <!-- Modal para PIN de administrador -->
-  <div id="adminModal" class="modal">
-    <div class="modal-content">
-      <h3>Acceso de Administrador</h3>
-      <p>Introduce el PIN para confirmar la venta:</p>
-      <input type="password" id="pinInput" placeholder="PIN de administrador">
-      <div class="modal-buttons">
-        <button id="cancelPin" class="secondary">Cancelar</button>
-        <button id="confirmPin" class="warn">Confirmar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== Firebase + Lógica completa en un solo archivo ===== -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import {
-      initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-      doc, getDoc, setDoc, runTransaction, onSnapshot, collection, query, serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-
-    // Configuración de Firebase - REEMPLAZA CON TU CONFIGURACIÓN REAL
-    const firebaseConfig = {
-      apiKey: "TU_API_KEY",
-      authDomain: "TU_PROYECTO.firebaseapp.com",
-      projectId: "TU_PROYECTO",
-      storageBucket: "TU_PROYECTO.appspot.com",
-      messagingSenderId: "TU_SENDER_ID",
-      appId: "TU_APP_ID",
-      measurementId: "TU_MEASUREMENT_ID"
-    };
-
-    // ====== Ajustes negocio / WhatsApp ======
-    const ADMIN_PIN = "123456";           // cámbialo
-    const TOTAL_TICKETS = 100;
-    const RESERVE_MINUTES = 10;
-    const RAFFLE_ID = "ocean_1";
-    const PRICE_PER_TICKET = 100;         // CUP por boleto
-    const WHATSAPP_ADMIN = "5353086152";  // sin '+'
-    const PAYMENT_INSTRUCTIONS =
-      "Método de pago: Transfermóvil o en efectivo. Enviar comprobante por aquí.";
-    // ========================================
-
-    // Inicializar Firebase
-    const app = initializeApp(firebaseConfig);
-    
-    // Inicializar Firestore con persistencia offline
-    const db = initializeFirestore(app, {
-      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-    });
-
-    // Generar ID único de usuario
-    const USER_ID = localStorage.getItem("raf_uid") || (() => {
-      const id = crypto.randomUUID(); 
-      localStorage.setItem("raf_uid", id); 
-      return id;
-    })();
-
-    // Referencias a elementos del DOM
-    const $ = s => document.querySelector(s);
-    const grid = $('#grid'), reserveBtn = $('#reserveBtn'), clearBtn = $('#clearBtn'), sellBtn = $('#sellBtn');
-    const statusEl = $('#status');
-    const tags = {
-      total: $('#totalTag'), 
-      free: $('#freeTag'), 
-      res: $('#reservedTag'), 
-      sold: $('#soldTag')
-    };
-    const nameInp = $('#name');
-    const phoneInp = $('#phone');
-    const adminModal = $('#adminModal');
-    const pinInput = $('#pinInput');
-    const cancelPin = $('#cancelPin');
-    const confirmPin = $('#confirmPin');
-    
-    // Variables de estado
-    const selected = new Set();
-    let numbersToSell = [];
-
-    // Utilidades
-    const ticketId = n => `${RAFFLE_ID}_${n}`;
-    const numLabel = n => n.toString().padStart(2, '0');
-
-    // Construir elemento de boleto
-    function buildTicket(n, data) {
-      const el = document.createElement('div');
-      el.className = 'ticket available';
-      el.textContent = numLabel(n);
-      el.dataset.number = n;
-      
-      const now = Date.now();
-      let st = data?.status || 'available';
-      
-      // Verificar si la reserva ha expirado
-      const until = data?.reservedUntil ? 
-        (data.reservedUntil.toMillis ? data.reservedUntil.toMillis() : new Date(data.reservedUntil).getTime()) : 0;
-      
-      if (st === 'reserved' && until < now) st = 'available';
-      
-      // Aplicar clase según estado
-      if (st === 'reserved') el.className = 'ticket reserved';
-      if (st === 'sold') el.className = 'ticket sold';
-      
-      // Agregar evento de clic solo si está disponible
-      if (st === 'available') {
-        el.addEventListener('click', () => {
-          if (el.classList.contains('selected')) {
-            el.classList.remove('selected');
-            selected.delete(n);
-          } else {
-            el.classList.add('selected');
-            selected.add(n);
-          }
-          reserveBtn.disabled = selected.size === 0;
-          statusEl.textContent = selected.size ? 
-            `Seleccionados: ${[...selected].sort((a, b) => a - b).map(numLabel).join(', ')}` : '';
-        });
-      }
-      
-      return el;
-    }
-
-    // Dibujar la cuadrícula de boletos
-    function draw(map) {
-      grid.innerHTML = '';
-      let free = 0, res = 0, sold = 0;
-      
-      for (let i = 1; i <= TOTAL_TICKETS; i++) {
-        const data = map.get(ticketId(i));
-        grid.appendChild(buildTicket(i, data));
-        
-        const st = !data ? 'available' :
-          data.status === 'sold' ? 'sold' :
-          (data.status === 'reserved' && 
-           ((data.reservedUntil?.toMillis?.() ?? new Date(data.reservedUntil || 0).getTime()) > Date.now())) ? 
-           'reserved' : 'available';
-        
-        if (st === 'available') free++;
-        if (st === 'reserved') res++;
-        if (st === 'sold') sold++;
-      }
-      
-      tags.total.textContent = `Boletos: ${TOTAL_TICKETS}`;
-      tags.free.textContent = `Libres: ${free}`;
-      tags.res.textContent = `Reservados: ${res}`;
-      tags.sold.textContent = `Vendidos: ${sold}`;
-    }
-
-    // Escuchar cambios en Firestore
-    onSnapshot(query(collection(db, "tickets")), snap => {
-      const map = new Map();
-      snap.forEach(d => map.set(d.id, d.data()));
-      draw(map);
-    });
-
-    // Crear documentos si faltan
-    (async () => {
-      for (let i = 1; i <= TOTAL_TICKETS; i++) {
-        const ref = doc(db, "tickets", ticketId(i));
-        const ss = await getDoc(ref);
-        if (!ss.exists()) {
-          await setDoc(ref, {
-            status: "available",
-            raffle: RAFFLE_ID,
-            number: i,
-            updatedAt: serverTimestamp()
-          });
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rifa Lavadora OCEAN 8.0 Kg</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-      }
-    })();
-
-    // Limpiar selección
-    clearBtn.addEventListener('click', () => {
-      selected.clear();
-      document.querySelectorAll('.ticket.selected').forEach(e => e.classList.remove('selected'));
-      reserveBtn.disabled = true;
-      statusEl.textContent = '';
-    });
-
-    // Abrir WhatsApp con mensaje de reserva
-    function openWhatsAppMessage(numbers, minutesLeft) {
-      const sorted = [...numbers].sort((a, b) => a - b);
-      const total = sorted.length * PRICE_PER_TICKET;
-      const cliente = (nameInp.value || "Cliente");
-      const telCli = phoneInp.value ? `\nWhatsApp cliente: ${phoneInp.value}` : "";
-      const texto = 
-`Hola, soy ${cliente}.
-Acabo de reservar estos números: ${sorted.map(numLabel).join(', ')}.
-Total: ${total} CUP (${sorted.length} x ${PRICE_PER_TICKET}).
-Reserva válida por ${minutesLeft} min.
-
-${PAYMENT_INSTRUCTIONS}
-Enlace del sitio: ${location.origin}${location.pathname}#comprar${telCli}`;
-      const url = `https://wa.me/${WHATSAPP_ADMIN}?text=${encodeURIComponent(texto)}`;
-      const win = window.open(url, '_blank');
-      if (!win) alert("Activa ventanas emergentes para abrir WhatsApp automáticamente.");
-    }
-
-    // Reservar boletos seleccionados
-    reserveBtn.addEventListener('click', async () => {
-      if (!selected.size) return;
-      
-      // Validar nombre
-      if (!nameInp.value.trim()) {
-        alert("Por favor, ingresa tu nombre para reservar.");
-        nameInp.focus();
-        return;
-      }
-      
-      reserveBtn.disabled = true;
-      reserveBtn.textContent = "Reservando...";
-      
-      try {
-        await Promise.all([...selected].map(n => {
-          const ref = doc(db, "tickets", ticketId(n));
-          return runTransaction(db, async tx => {
-            const snap = await tx.get(ref);
-            const d = snap.data() || { status: "available" };
-            const now = Date.now();
-            
-            // Verificar si la reserva ha expirado
-            const until = d?.reservedUntil ? 
-              (d.reservedUntil.toMillis ? d.reservedUntil.toMillis() : new Date(d.reservedUntil).getTime()) : 0;
-            
-            const canReserve = d.status === "available" || (d.status === "reserved" && until < now);
-            
-            if (!canReserve) throw new Error(`El ${numLabel(n)} ya no está disponible`);
-            
-            tx.set(ref, {
-              status: "reserved",
-              reservedBy: USER_ID,
-              reservedUntil: new Date(now + RESERVE_MINUTES * 60 * 1000),
-              updatedAt: serverTimestamp(),
-              raffle: RAFFLE_ID,
-              number: n,
-              customerName: nameInp.value.trim(),
-              customerPhone: phoneInp.value.trim() || null
-            }, { merge: true });
-          });
-        }));
         
-        openWhatsAppMessage(selected, RESERVE_MINUTES);
-        alert(`¡Reservado! Tienes ${RESERVE_MINUTES} min para pagar/confirmar. Se abrió WhatsApp con tus datos.`);
-      } catch (e) {
-        alert(e.message || "Algún número ya estaba tomado. Actualiza la página e intenta de nuevo.");
-        console.error("Error en reserva:", e);
-      } finally {
-        clearBtn.click();
-        reserveBtn.textContent = "Reservar selección (10 min)";
-      }
-    });
-
-    // Mostrar modal para PIN de administrador
-    sellBtn.addEventListener('click', () => {
-      const list = prompt("Números a marcar como VENDIDOS (separados por coma). Ej: 7,12,33");
-      if (!list) return;
-      
-      numbersToSell = list.split(',')
-        .map(s => parseInt(s.trim(), 10))
-        .filter(n => !isNaN(n) && n >= 1 && n <= TOTAL_TICKETS);
-      
-      if (numbersToSell.length === 0) {
-        alert("No se ingresaron números válidos.");
-        return;
-      }
-      
-      pinInput.value = "";
-      adminModal.style.display = "flex";
-      pinInput.focus();
-    });
-
-    // Confirmar PIN de administrador
-    confirmPin.addEventListener('click', async () => {
-      const pin = pinInput.value.trim();
-      if (pin !== ADMIN_PIN) {
-        alert("PIN incorrecto.");
-        return;
-      }
-      
-      adminModal.style.display = "none";
-      sellBtn.disabled = true;
-      sellBtn.textContent = "Procesando...";
-      
-      try {
-        await Promise.all(numbersToSell.map(n => {
-          const ref = doc(db, "tickets", ticketId(n));
-          return runTransaction(db, async tx => {
-            const snap = await tx.get(ref);
-            if (!snap.exists()) throw new Error(`No existe el boleto ${n}`);
-            
-            const d = snap.data();
-            if (d.status === "sold") return; // Ya está vendido, no hacer nada
-            
-            const until = d?.reservedUntil ? 
-              (d.reservedUntil.toMillis ? d.reservedUntil.toMillis() : new Date(d.reservedUntil).getTime()) : 0;
-            
-            // Si está reservado y la reserva no ha expirado, no permitir venta
-            if (d.status === "reserved" && until > Date.now()) {
-              throw new Error(`El número ${numLabel(n)} está reservado y la reserva aún es válida.`);
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        header {
+            background: #2575fc;
+            color: white;
+            text-align: center;
+            padding: 25px 20px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+        }
+        
+        .image-section {
+            flex: 1;
+            min-width: 300px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .product-image {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #ddd;
+        }
+        
+        .product-title {
+            margin-top: 15px;
+            font-size: 1.5rem;
+            color: #2575fc;
+        }
+        
+        .product-features {
+            text-align: left;
+            margin-top: 15px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .product-features li {
+            margin-bottom: 8px;
+            list-style-type: none;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .product-features li:before {
+            content: "✓";
+            color: #28a745;
+            position: absolute;
+            left: 0;
+        }
+        
+        .raffle-section {
+            flex: 1;
+            min-width: 300px;
+            padding: 15px;
+        }
+        
+        .instructions {
+            background: #e9f7ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .instructions h3 {
+            color: #2575fc;
+            margin-bottom: 10px;
+        }
+        
+        .numbers-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 8px;
+            margin: 20px 0;
+        }
+        
+        .number {
+            width: 100%;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f1f3f5;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .number:hover {
+            background: #d8f5ff;
+            border-color: #2575fc;
+        }
+        
+        .number.selected {
+            background: #4cd964;
+            color: white;
+            border-color: #2ecc71;
+        }
+        
+        .number.sold {
+            background: #ff6b6b;
+            color: white;
+            border-color: #ff4757;
+            cursor: not-allowed;
+        }
+        
+        .actions {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            background: #2575fc;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn:hover {
+            background: #1c60d1;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn i {
+            margin-right: 8px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+        
+        .whatsapp-contact {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #25d366;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
             }
             
-            // Marcar como vendido
-            tx.set(ref, {
-              status: "sold",
-              soldAt: new Date(),
-              updatedAt: serverTimestamp()
-            }, { merge: true });
-          });
-        }));
+            .numbers-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
         
-        alert(`Venta confirmada para los números: ${numbersToSell.map(numLabel).join(', ')}`);
-      } catch (e) {
-        alert(e.message || "Error al procesar la venta.");
-        console.error("Error en venta:", e);
-      } finally {
-        sellBtn.disabled = false;
-        sellBtn.textContent = "Confirmar pago";
-        numbersToSell = [];
-      }
-    });
+        .image-placeholder {
+            width: 100%;
+            height: 300px;
+            background: #f1f3f5;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            border: 2px dashed #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>RIFA ESPECIAL</h1>
+            <p class="subtitle">Lavadora OCEAN de 8.0 Kg - ¡Participa por solo $10!</p>
+        </header>
+        
+        <div class="content">
+            <div class="image-section">
+                <!-- Espacio para la imagen de la lavadora -->
+                <div class="image-placeholder">
+                    <div>
+                        <i class="fas fa-camera fa-3x"></i>
+                        <p>Imagen de la lavadora OCEAN</p>
+                        <p><small>Nombre del archivo: ocean1.jpg</small></p>
+                    </div>
+                </div>
+                
+                <h2 class="product-title">Lavadora OCEAN 8.0 Kg</h2>
+                
+                <div class="product-features">
+                    <h3>Características principales:</h3>
+                    <ul>
+                        <li>Capacidad de 8.0 kg</li>
+                        <li>Funciones inteligentes de lavado</li>
+                        <li>Bajo consumo energético</li>
+                        <li>Diseño moderno y elegante</li>
+                        <li>Display digital con múltiples programas</li>
+                        <li>Tecnología inverter silenciosa</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="raffle-section">
+                <div class="instructions">
+                    <h3>¿Cómo participar?</h3>
+                    <p>1. Selecciona uno o más números disponibles</p>
+                    <p>2. Haz clic en el botón "Reservar por WhatsApp"</p>
+                    <p>3. Te contactaremos para confirmar tu reserva y pago</p>
+                </div>
+                
+                <h3>Selecciona tu número de la suerte (1-100):</h3>
+                <div class="numbers-grid" id="numbersGrid">
+                    <!-- Los números se generarán con JavaScript -->
+                </div>
+                
+                <div class="actions">
+                    <button class="btn" id="whatsappBtn">
+                        <i class="fab fa-whatsapp"></i> Reservar por WhatsApp
+                    </button>
+                </div>
+                
+                <div class="whatsapp-contact">
+                    <p>Contacto: <strong>+53 53086152</strong></p>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>&copy; 2023 Rifa Lavadora OCEAN - Todos los derechos reservados</p>
+            <p>Los números se asignan por orden de llegada. Una vez confirmado el pago, el número queda reservado.</p>
+        </footer>
+    </div>
 
-    // Cancelar ingreso de PIN
-    cancelPin.addEventListener('click', () => {
-      adminModal.style.display = "none";
-      numbersToSell = [];
-    });
-
-    // Cerrar modal con ESC
-    document.addEventListener('keydown', (e) => {
-      if (e.key === "Escape" && adminModal.style.display === "flex") {
-        adminModal.style.display = "none";
-        numbersToSell = [];
-      }
-    });
-  </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const numbersGrid = document.getElementById('numbersGrid');
+            const whatsappBtn = document.getElementById('whatsappBtn');
+            let selectedNumbers = [];
+            
+            // Cargar números vendidos desde localStorage o inicializar array vacío
+            let soldNumbers = JSON.parse(localStorage.getItem('soldNumbers')) || [];
+            
+            // Generar los números del 1 al 100
+            for (let i = 1; i <= 100; i++) {
+                const numberElement = document.createElement('div');
+                numberElement.classList.add('number');
+                numberElement.textContent = i;
+                numberElement.dataset.number = i;
+                
+                // Marcar como vendido si está en la lista
+                if (soldNumbers.includes(i)) {
+                    numberElement.classList.add('sold');
+                } else {
+                    // Agregar evento de clic solo si no está vendido
+                    numberElement.addEventListener('click', function() {
+                        if (selectedNumbers.includes(i)) {
+                            // Si ya está seleccionado, quitarlo
+                            const index = selectedNumbers.indexOf(i);
+                            selectedNumbers.splice(index, 1);
+                            numberElement.classList.remove('selected');
+                        } else {
+                            // Si no está seleccionado, agregarlo
+                            selectedNumbers.push(i);
+                            numberElement.classList.add('selected');
+                        }
+                    });
+                }
+                
+                numbersGrid.appendChild(numberElement);
+            }
+            
+            // Configurar el botón de WhatsApp
+            whatsappBtn.addEventListener('click', function() {
+                if (selectedNumbers.length === 0) {
+                    alert('Por favor, selecciona al menos un número para participar.');
+                    return;
+                }
+                
+                const phoneNumber = '5353086152';
+                const message = `Hola, estoy interesado en participar en la rifa de la lavadora OCEAN. Quisiera reservar el(s) número(s): ${selectedNumbers.join(', ')}.`;
+                const encodedMessage = encodeURIComponent(message);
+                const whatsappURL = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+                
+                window.open(whatsappURL, '_blank');
+                
+                // Marcar números como vendidos (esto sería después del pago)
+                // En una implementación real, esto se haría después de confirmar el pago
+                // soldNumbers = soldNumbers.concat(selectedNumbers);
+                // localStorage.setItem('soldNumbers', JSON.stringify(soldNumbers));
+                
+                // selectedNumbers = [];
+                // document.querySelectorAll('.number.selected').forEach(el => {
+                //     el.classList.remove('selected');
+                //     el.classList.add('sold');
+                // });
+            });
+        });
+    </script>
 </body>
-  </html>
+</html>
